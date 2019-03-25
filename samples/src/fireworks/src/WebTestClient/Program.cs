@@ -123,7 +123,7 @@ namespace WebTestClient
             await Task.Delay(delayMillis);
 
             var client = new PingClient(
-                objectCounterAddress,
+                new[] { objectCounterAddress },
                 objInfo,
                 PingClient.PingSettings.FromEnvironment());
 

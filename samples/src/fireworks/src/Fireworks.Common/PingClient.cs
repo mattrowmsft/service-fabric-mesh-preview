@@ -6,6 +6,8 @@
 namespace Microsoft.ServiceFabricMesh.Fireworks.Common
 {
     using System;
+    using System.Collections.Generic;
+    using System.Linq;
     using System.Net.Http;
     using System.Text;
     using System.Threading;
@@ -15,25 +17,26 @@ namespace Microsoft.ServiceFabricMesh.Fireworks.Common
     public partial class PingClient
     {
         private const string OBJECTCOUNTER_ADDRESS = "OBJECTCOUNTER_ADDRESS";
+        private const string OBJECTCOUNTER_COUNT = "OBJECTCOUNTER_COUNT";
 
         private static readonly HttpClient Client;
         private static Random Rand;
 
-        private readonly string objectCounterAddress;
+        private readonly IEnumerable<string> objectCounterAddress;
         private readonly ObjectInfo objInfo;
         private readonly PingSettings pingSettings;
         private bool reportError;
 
         public PingClient()
             : this(
-                  GetObjectCounterAddressFromEnvironment(),
+                  GetObjectCounterAddressesFromEnvironment(),
                   ObjectInfo.FromEnvironment(),
                   PingSettings.FromEnvironment())
         {
         }
 
         public PingClient(
-            string objectCounterAddress,
+            IEnumerable<string> objectCounterAddress,
             ObjectInfo objInfo,
             PingSettings pingSettings)
         {
@@ -49,28 +52,43 @@ namespace Microsoft.ServiceFabricMesh.Fireworks.Common
             Client = new HttpClient();
         }
 
-        private static string GetObjectCounterAddressFromEnvironment()
+        private static IEnumerable<string> GetObjectCounterAddressesFromEnvironment()
         {
+            string baseAddress = "web:8080";
             if (Environment.GetEnvironmentVariable(OBJECTCOUNTER_ADDRESS) != null)
             {
-                return Environment.GetEnvironmentVariable(OBJECTCOUNTER_ADDRESS);
+                baseAddress = Environment.GetEnvironmentVariable(OBJECTCOUNTER_ADDRESS);
             }
-            else
+
+            int endpointCount = 1;
+            if (Environment.GetEnvironmentVariable(OBJECTCOUNTER_COUNT) != null)
             {
-                return "web:8080";
+                int.TryParse(Environment.GetEnvironmentVariable(OBJECTCOUNTER_COUNT), out endpointCount);
             }
+
+            var host = baseAddress.Split(':')[0];
+            var port = baseAddress.Split(':')[1];
+            return Enumerable.Range(0, endpointCount).Select(idx => $"{host}--{idx}:{port}");
         }
 
         public async Task SendPingAsync(CancellationToken cancellationToken)
         {
-            var requestUri = new Uri($"http://{this.objectCounterAddress}/api/values?id={this.objInfo.Id}&type={this.objInfo.Type}&version={this.objInfo.Version}");
-            Console.WriteLine($"{DateTime.UtcNow}: Sending ping to {requestUri}");
-
-            while (!cancellationToken.IsCancellationRequested)
+            var pingTasks = new List<Task>();
+            foreach (var address in this.objectCounterAddress)
             {
-                var success = await SendData(requestUri, cancellationToken);
-                await Task.Delay(GetDueTime(success), cancellationToken);
+                pingTasks.Add(Task.Run(async () =>
+                    {
+                        var requestUri = new Uri($"http://{address}/api/values?id={this.objInfo.Id}&type={this.objInfo.Type}&version={this.objInfo.Version}");
+                        Console.WriteLine($"{DateTime.UtcNow}: Sending ping to {requestUri}");
+                        while (!cancellationToken.IsCancellationRequested)
+                        {
+                            var success = await SendData(requestUri, cancellationToken);
+                            await Task.Delay(GetDueTime(success), cancellationToken);
+                        }
+                    }));
             }
+
+            await Task.WhenAll(pingTasks);
         }
 
         private async Task<bool> SendData(Uri requestUri, CancellationToken cancellationToken)
