@@ -42,7 +42,7 @@ namespace Microsoft.ServiceFabricMesh.Fireworks.Common
                     objectVersion = Environment.GetEnvironmentVariable(OBJECT_VERSION);
                 }
                
-                var objectId = Guid.NewGuid().ToString(); ;
+                var objectId = Guid.NewGuid().ToString() + Environment.GetEnvironmentVariable("Fabric_CodePackageName");
                 if (Environment.GetEnvironmentVariable(OBJECT_ID) != null)
                 {
                     objectId = Environment.GetEnvironmentVariable(OBJECT_ID);

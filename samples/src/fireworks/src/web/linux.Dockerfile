@@ -16,4 +16,4 @@ RUN dotnet publish web.csproj -c Release -o /app
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app .
-ENTRYPOINT ["dotnet", "web.dll"]
+CMD ["/bin/sh", "-c", "ulimit -n 30000;dotnet web.dll"]

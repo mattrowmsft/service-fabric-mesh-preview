@@ -10,9 +10,9 @@ var value = 0;
 var scale = 1;
 var yAxes = [{
   ticks: {
-    max: 500,
+    max: 1000,
     min: 0,
-    stepSize: 100,
+    stepSize: 200,
     fontSize: 15,
     fontColor: '#fff'
   },
@@ -187,15 +187,15 @@ function updateCharts() {
 }
 
 function progress() {
-  if (countData[0] <= 500) {
+  if (countData[0] <= 1000) {
     values1.push({
       x: new Date(),
       y: countData[0]
     });
     values1.shift();
   }
-
-  if (countData[1] <= 500) {
+    5
+  if (countData[1] <= 1000) {
     values2.push({
       x: new Date(),
       y: countData[1]
@@ -203,7 +203,7 @@ function progress() {
     values2.shift();
   }
 
-  if (countData[2] <= 500) {
+  if (countData[2] <= 1000) {
     values3.push({
       x: new Date(),
       y: countData[2]

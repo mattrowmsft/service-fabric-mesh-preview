@@ -392,11 +392,11 @@ var Fireworks = function () {
     };
 
     self.start = function(count, hue, xStart) {
-        if (self.fireworks && self.fireworks.length >= 500) {
+        if (self.fireworks && self.fireworks.length >= 1000) {
             return;
         }
         
-        if (self.fireworks && self.fireworks.length + count > 500)
+        if (self.fireworks && self.fireworks.length + count > 1000)
             count = Math.round((count - self.fireworks.length));
         
         self.init();
